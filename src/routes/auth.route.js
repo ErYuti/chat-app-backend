@@ -1,15 +1,32 @@
-import express from 'express';
-import { upload } from '../lib/cloudinary.js';
-import { login, logout, signup, updateUserProfile, getMe, sendOtp } from '../controllers/auth.controller.js';
-import { protectRoute } from '../middleware/protectRoute.js';
+// backend/routes/auth.route.js
+import express from "express";
+import { upload } from "../lib/cloudinary.js";
+
+import {
+    login,
+    logout,
+    signup,
+    updateUserProfile,
+    getMe,
+    sendOtp,
+} from "../controllers/auth.controller.js";
+
+import { protectRoute } from "../middleware/protectRoute.js";
 
 const router = express.Router();
 
-router.post('/send-otp', sendOtp); // New route
-router.post('/signup', signup);
-router.post('/login', login);
-router.post('/logout', logout);
-router.post('/update-profile', protectRoute, upload.single('profilePic'), updateUserProfile);
-router.get('/me', protectRoute, getMe);
+router.post("/send-otp", sendOtp);
+router.post("/signup", signup);
+router.post("/login", login);
+router.post("/logout", logout);
+
+router.post(
+    "/update-profile",
+    protectRoute,
+    upload.single("profilePic"),
+    updateUserProfile
+);
+
+router.get("/me", protectRoute, getMe);
 
 export default router;
