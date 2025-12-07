@@ -203,14 +203,24 @@ export const blockUser = async (req, res) => {
     const { id: userToBlockId } = req.params;
     const currentUserId = req.user._id;
 
+    // Update Current User: Add to block, remove friend, remove pending requests
     await User.findByIdAndUpdate(currentUserId, {
       $addToSet: { blockedUsers: userToBlockId },
-      $pull: { friends: userToBlockId },
+      $pull: { 
+        friends: userToBlockId,
+        friendRequestsSent: userToBlockId,
+        friendRequestsReceived: userToBlockId
+      },
     });
 
+    // Update Blocked User: Add to block (optional, usually one-way block is enough, but two-way ensures separation), remove friend/requests
     await User.findByIdAndUpdate(userToBlockId, {
       $addToSet: { blockedUsers: currentUserId },
-      $pull: { friends: currentUserId },
+      $pull: { 
+        friends: currentUserId,
+        friendRequestsSent: currentUserId,
+        friendRequestsReceived: currentUserId
+      },
     });
 
     res.status(200).json({ message: "User blocked successfully" });

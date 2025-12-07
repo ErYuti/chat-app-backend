@@ -1,10 +1,11 @@
 import express from 'express';
 import { upload } from '../lib/cloudinary.js';
-import { login, logout, signup, updateUserProfile, getMe } from '../controllers/auth.controller.js';
+import { login, logout, signup, updateUserProfile, getMe, sendOtp } from '../controllers/auth.controller.js';
 import { protectRoute } from '../middleware/protectRoute.js';
 
 const router = express.Router();
 
+router.post('/send-otp', sendOtp); // New route
 router.post('/signup', signup);
 router.post('/login', login);
 router.post('/logout', logout);
