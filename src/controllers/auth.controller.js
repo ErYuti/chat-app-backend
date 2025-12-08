@@ -1,17 +1,20 @@
-// backend/controllers/auth.controller.js
 import User from "../models/User.js";
 import Otp from "../models/Otp.js";
 import jwt from "jsonwebtoken";
 import { sendEmail } from "../lib/email.js";
 
-// 🔐 Helper: send JWT cookie properly for Netlify → Render
+// -----------------------------------------------------
+// 🍪 HELPER: COOKIE CONFIGURATION (CRITICAL)
+// -----------------------------------------------------
 const sendTokenCookie = (res, token) => {
     res.cookie("jwt", token, {
-        httpOnly: true,
-        secure: true,          // required for HTTPS (Render)
-        sameSite: "none",      // required for cross-domain cookies
-        path: "/",             // allow all routes
-        maxAge: 15 * 24 * 60 * 60 * 1000, // 15 days
+        maxAge: 15 * 24 * 60 * 60 * 1000, // 15 days in milliseconds
+        httpOnly: true,                   // Prevents XSS (JavaScript cannot access cookie)
+        // 'sameSite: none' and 'secure: true' are REQUIRED for Cross-Site cookies
+        // (e.g. Netlify Frontend -> Render Backend)
+        sameSite: "none",                 
+        secure: true,                     
+        path: "/",                        // Available on all routes
     });
 };
 
@@ -77,12 +80,14 @@ export const signup = async (req, res) => {
 
         await Otp.deleteMany({ email });
 
+        // Generate Token
         const token = jwt.sign(
             { userId: user._id },
             process.env.JWT_SECRET,
             { expiresIn: "15d" }
         );
 
+        // Send Cookie
         sendTokenCookie(res, token);
 
         res.status(201).json({
@@ -113,12 +118,14 @@ export const login = async (req, res) => {
         if (!valid)
             return res.status(400).json({ message: "Invalid credentials" });
 
+        // Generate Token
         const token = jwt.sign(
             { userId: user._id },
             process.env.JWT_SECRET,
             { expiresIn: "15d" }
         );
 
+        // Send Cookie
         sendTokenCookie(res, token);
 
         res.status(200).json({
@@ -139,11 +146,13 @@ export const login = async (req, res) => {
 // 4. LOGOUT
 // =============================
 export const logout = (req, res) => {
+    // Clear the cookie by setting age to 0
     res.cookie("jwt", "", {
         maxAge: 0,
-        path: "/",
-        secure: true,
+        httpOnly: true,
         sameSite: "none",
+        secure: true,
+        path: "/"
     });
 
     res.status(200).json({ message: "Logged out" });
@@ -170,8 +179,6 @@ export const updateUserProfile = async (req, res) => {
         const user = await User.findById(userId);
         if (!user)
             return res.status(404).json({ message: "User not found" });
-
-        const firstTime = !user.isOnBoarded;
 
         user.fullname = fullname || user.fullname;
         user.bio = bio || user.bio;
@@ -210,6 +217,7 @@ export const updateUserProfile = async (req, res) => {
 // =============================
 export const getMe = async (req, res) => {
     try {
+        // req.user is set by the protectRoute middleware
         if (!req.user)
             return res.status(401).json({ message: "Unauthorized" });
 
