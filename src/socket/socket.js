@@ -1,16 +1,19 @@
 import { Server } from "socket.io";
 import http from "http";
 import express from "express";
-import Message from "../models/Message.js"; 
+import Message from "../models/Message.js";
 
 const app = express();
 const server = http.createServer(app);
 
-const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:5173";
+// ✅ Make this dynamic
+const CLIENT_URL = process.env.NODE_ENV === "production"
+    ? "https://yuti-chatapp.netlify.app"
+    : "http://localhost:5173";
 
 const io = new Server(server, {
     cors: {
-        origin: [CLIENT_URL], 
+        origin: CLIENT_URL, // Specific URL here too
         methods: ["GET", "POST"],
         credentials: true
     },
@@ -24,7 +27,7 @@ const userSocketMap = {}; // { userId: socketId }
 
 io.on("connection", (socket) => {
     const userId = socket.handshake.query.userId;
-    
+
     if (userId && userId !== "undefined") {
         userSocketMap[userId] = socket.id;
     }
@@ -59,7 +62,7 @@ io.on("connection", (socket) => {
                 { _id: { $in: messageIds } },
                 { $set: { status: 'read' } }
             );
-            const senderSocketId = getReceiverSocketId(senderId); 
+            const senderSocketId = getReceiverSocketId(senderId);
             if (senderSocketId) {
                 io.to(senderSocketId).emit("messagesRead", { messageIds });
             }
@@ -91,7 +94,7 @@ io.on("connection", (socket) => {
     });
 
     socket.on("disconnect", () => {
-        if(userId) delete userSocketMap[userId];
+        if (userId) delete userSocketMap[userId];
         io.emit("getOnlineUsers", Object.keys(userSocketMap));
     });
 });
